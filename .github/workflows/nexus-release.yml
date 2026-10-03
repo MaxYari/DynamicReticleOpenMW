@@ -25,7 +25,7 @@ name: Release to Nexus Mods
 # places.
 #
 # One-time setup, before the first [nexus] push:
-#   1. Fill in NEXUSMODS_FILE_ID below: it is in the "Advanced" panel of the main file on the Nexus
+#   1. NEXUSMODS_FILE_ID below is in the "Advanced" panel of the main file on the Nexus
 #      page. NEXUSMODS_MOD_ID is the internal one the API reports, not the number in the page URL.
 #   2. Repo Settings -> Secrets and variables -> Actions -> New repository secret
 #      NEXUSMODS_API_KEY = the "Personal API Key" from https://www.nexusmods.com/settings/api-keys
@@ -52,7 +52,7 @@ concurrency:
 env:
   NEXUS_PAGE: https://www.nexusmods.com/morrowind/mods/56584
   # From the "Advanced" panel of the main file on Nexus. Not secret.
-  NEXUSMODS_FILE_ID: "" # TODO: not filled in yet, uploads fail until it is
+  NEXUSMODS_FILE_ID: "3322147"
   NEXUSMODS_MOD_ID: "429496786184" # internal mod ID, not the one from the page URL
   FILE_DISPLAY_NAME: Dynamic Reticle # Shown on Nexus as "Dynamic Reticle v<version>"
   ZIP_NAME: DynamicReticle
