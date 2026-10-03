@@ -124,8 +124,9 @@ local function readiedOpacityKey(stance, dt)
 end
 
 -- Other mods' say over the reticle's opacity, by whoever asked, multiplied in
--- with the slots above. Combat Juice uses it to fade the reticle out from under
--- a kill marker drawn on top of it.
+-- with the slots above, the sneak arrows' too. Combat Juice uses it to fade the
+-- reticle out from under a kill marker drawn on top of it, Sneak! to hide it
+-- behind its own stealth reticle.
 local externalAlpha = {}
 
 local function setAlphaMultiplier(source, alpha)
@@ -136,13 +137,33 @@ local function setAlphaMultiplier(source, alpha)
     end
 end
 
+local function externalAlphaProduct()
+    local product = 1
+    for _, alpha in pairs(externalAlpha) do product = product * alpha end
+    return product
+end
+
+-- The Reticle Opacity multipliers, fading like the opacity for what is readied: While Sneaking (the reticle
+-- only, the sneak arrows have their own opacity) and In Third Person (the arrows too). nil until the first
+-- update, which starts at the setting.
+local sneakingAlpha = nil
+local viewAlpha = nil
+
+local function sneakingAlphaGoal()
+    return wasSneaking and opacitySettings['SneakingOpacityMult'] or 1
+end
+
+local function viewAlphaGoal()
+    return camera.getMode() ~= camera.MODE.FirstPerson and opacitySettings['ThirdPersonOpacityMult'] or 1
+end
+
 -- Compute final reticle size and alpha from all multiplier slots
 local function computeReticleValues()
     local s = reticleState
     local ru = reticleEl.userData
     local finalScale = s.sneak.scale * s.shoot.scale * s.miss.scale
-    local finalAlpha = (readiedAlpha or 0) * s.sneak.alpha * s.shoot.alpha * s.miss.alpha
-    for _, alpha in pairs(externalAlpha) do finalAlpha = finalAlpha * alpha end
+    local finalAlpha = (readiedAlpha or 0) * (sneakingAlpha or 1) * (viewAlpha or 1)
+        * s.sneak.alpha * s.shoot.alpha * s.miss.alpha * externalAlphaProduct()
     reticleEl.props.size = ru.size * finalScale
     reticleEl.props.alpha = util.clamp(finalAlpha, 0, 1)
 end
@@ -224,13 +245,26 @@ local hpWidgetShader = shaderUtils.ShaderWrapper:new('hpWidget', {
     uStaminaOpacity = 0,
 })
 
+-- The widget is a shader, which draws in screen pixels, while the reticle is a UI element, sized in UI units (screen
+-- pixels divided by the UI scale). Scaled by how many screen pixels make one UI unit, the widget grows with the UI
+-- scale like the reticle does.
+local function uiPixelScale()
+    local ok, hudSize = pcall(function() return ui.layers[ui.layers.indexOf('HUD')].size end)
+    if not ok or not hudSize or hudSize.y <= 0 then return 1 end
+    return ui.screenSize().y / hudSize.y
+end
+
+local function applyWidgetScale()
+    hpWidgetShader.u.uScale = widgetSettings["HpWidgetScale"] * uiPixelScale()
+end
+
 -- The widget settings that are uniforms; on load and whenever they change.
 function applyWidgetSettings()
     local u = hpWidgetShader.u
     local staminaThickness = HP_ARC_THICKNESS * widgetSettings["StaminaWidgetThickness"]
     u.uColor = widgetSettings["HpWidgetColor"]:asRgb()
     u.uDamageColor = widgetSettings["HpWidgetDamageColor"]:asRgb()
-    u.uScale = widgetSettings["HpWidgetScale"]
+    applyWidgetScale()
     u.uStaminaColor = widgetSettings["StaminaWidgetColor"]:asRgb()
     u.uStaminaDamageColor = widgetSettings["StaminaWidgetDamageColor"]:asRgb()
     u.uStaminaThickness = staminaThickness
@@ -266,13 +300,13 @@ local lastStaminaHitAt = -math.huge
 
 -- Sneak arrows: `shown` is animated when sneaking starts or stops, `bounce` (outward) on every footstep. They
 -- are placed only when one of the two changes. Their opacity is their own, or with Sneak Arrows Use Reticle
--- Opacity the reticle's for what is readied, following its fade.
+-- Opacity the reticle's for what is readied, following its fade, times In Third Person and other mods' say.
 local sneakArrows = { shown = 0, bounce = 0 }
 
 local function applySneakArrowsAlpha()
     local alpha = animConf.sneakArrowAlpha
     if visualSettings["SneakArrowsUseReticleOpacity"] then alpha = readiedAlpha or 0 end
-    alpha = util.clamp(alpha * sneakArrows.shown, 0, 1)
+    alpha = util.clamp(alpha * sneakArrows.shown * (viewAlpha or 1) * externalAlphaProduct(), 0, 1)
     stealthArrowLEl.props.alpha = alpha
     stealthArrowREl.props.alpha = alpha
 end
@@ -318,6 +352,7 @@ end
 -- what is readied at once, the game being paused in the settings.
 function applyOpacitySettings()
     if readiedKey then readiedAlpha = opacitySettings[readiedKey] end
+    sneakingAlpha, viewAlpha = sneakingAlphaGoal(), viewAlphaGoal()
     applySneakArrowsAlpha()
     computeReticleValues()
     ui_elements.parentElement:update()
@@ -479,6 +514,7 @@ local function onUpdate(dt)
     -- Shader is off entirely while the HUD is hidden (F11), not just faded.
     local anyWidget = widgetSettings["ShowHpWidget"] or widgetSettings["ShowStaminaWidget"]
     if widgetShouldStart and anyWidget and isHudVisible then
+        applyWidgetScale() -- only sent to the shader when it changes (a window moved to another display, say)
         hpWidgetShader:enable()
     else
         hpWidgetShader:disable()
@@ -502,12 +538,16 @@ local function onUpdate(dt)
     local stance = types.Actor.getStance(omwself)
     readiedKey = readiedOpacityKey(stance, dt)
     local readiedGoal = opacitySettings[readiedKey]
+    local fade = gutils.dtForLerp(dt, 5)
     if readiedAlpha == nil then
         readiedAlpha = readiedGoal
     else
-        readiedAlpha = gutils.lerp(readiedAlpha, readiedGoal, gutils.dtForLerp(dt, 5))
+        readiedAlpha = gutils.lerp(readiedAlpha, readiedGoal, fade)
     end
-    if sneakArrows.shown ~= 0 and visualSettings["SneakArrowsUseReticleOpacity"] then applySneakArrowsAlpha() end
+    local sneakingGoal, viewGoal = sneakingAlphaGoal(), viewAlphaGoal()
+    sneakingAlpha = sneakingAlpha and gutils.lerp(sneakingAlpha, sneakingGoal, fade) or sneakingGoal
+    viewAlpha = viewAlpha and gutils.lerp(viewAlpha, viewGoal, fade) or viewGoal
+    if sneakArrows.shown ~= 0 then applySneakArrowsAlpha() end
 
     -- Update reticle from multiplier slots
     computeReticleValues()
@@ -603,10 +643,11 @@ return {
     },
     interfaceName = "DynamicReticle",
     interface = {
-        version=1.1,
+        version=1.2,
         setReticleWorldPos=setReticleWorldPos,
         -- setAlphaMultiplier(source, alpha): fade the reticle for as long as
-        -- `source` asks; 1 or nil hands it back. Since 1.1.
+        -- `source` asks; 1 or nil hands it back. Since 1.1, and since 1.2 the
+        -- sneak arrows fade with it.
         setAlphaMultiplier = setAlphaMultiplier,
         setReticleScreenPos = setReticleScreenPos,
         setCurrentEnemy = setCurrentEnemy

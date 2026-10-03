@@ -77,17 +77,18 @@ end
 --
 -- Drawn the way the HUD draws them, by the same layout function, at rest: the reticle as it is when not
 -- sneaking, or sneaking, with the arrows out and the reticle at its sneak size. In the reticle's colour
--- and sizes, the reticle at its most visible opacity and the arrows at theirs (or the reticle's, when they
--- use it). The backdrop is a dark, blurred still (Combat Juice's hit marker one), so the reticle is judged
+-- and sizes, the reticle at its most visible opacity (times While Sneaking, sneaking) and the arrows at
+-- theirs (or the reticle's, when they use it). The backdrop is a dark, blurred still (Combat Juice's hit marker one), so the reticle is judged
 -- against something like the game rather than against the menu.
 
 local PREVIEW_SIZE = util.vector2(168, 170) -- the backdrop's own size, drawn 1:1
 local backdrop = ui.texture { path = "textures/dynamic reticle/preview_backdrop.png" }
 
--- The highest of the Reticle Opacity settings
+-- The highest of the Reticle Opacity settings for what is readied
 local function mostVisibleAlpha()
     local alpha = 0
-    for _, value in pairs(opacitySettings:asTable()) do
+    for _, key in ipairs(DEFS.readiedOpacityKeys) do
+        local value = opacitySettings:get(key)
         if type(value) == 'number' and value > alpha then alpha = value end
     end
     return alpha
@@ -108,6 +109,7 @@ local function previewLayout(kind, value, argument)
         opts.arrowAlpha = visualSettings:get('SneakArrowsOpacity') or 1
     end
     if kind == 'sneak' then
+        opts.alpha = opts.alpha * (opacitySettings:get('SneakingOpacityMult') or 1)
         opts.reticlePath = argument.reticlePaths and argument.reticlePaths[visualSettings:get('Reticle')]
         opts.arrowPaths = paths[value]
         opts.sneak = 1

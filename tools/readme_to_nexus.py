@@ -8,9 +8,9 @@
   commit sha; default: the current branch). Pinning to a tag/sha keeps the Nexus page intact
   even if files are later moved or deleted on the branch.
 - <details><summary>Title</summary> ... </details> becomes a bold title and a [spoiler].
-- A linked image that points at a YouTube video, [![Demo](thumbnail)](https://www.youtube.com/watch?v=ID),
-  becomes Nexus' embedded player, [youtube]ID[/youtube]. A "click to watch" line for GitHub can go in
-  nexus-skip markers (below).
+- A link to a YouTube video around an image (the thumbnail), as markdown [![Demo](thumbnail)](youtube url) or
+  html <a href="youtube url"><img ...></a>, becomes Nexus' embedded player, [youtube]ID[/youtube]. The "click to
+  watch" line GitHub needs goes in nexus-skip markers (below), since Nexus plays the video in place.
 - <font color="..." size="..."> becomes [color]/[size]. GitHub shows the text in it plain.
 - Nexus BBCode has no image widths, so if <dir>/nexus/<name> exists for a referenced image,
   that pre-scaled variant is used instead (e.g. imgs/nexus/banner_right.png).
@@ -355,16 +355,22 @@ class _HtmlToBBCode(HTMLParser):
         self.conv = conv
         self.out = []
         self.stack = []  # (tag, closing bbcode)
+        self.videos = []  # open links to YouTube videos: [where their output starts, video id, holds an image]
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         close = ""
         if tag == "a" and a.get("href"):
+            vid = YOUTUBE_RE.search(a["href"])
+            if vid:
+                self.videos.append([len(self.out), vid.group(1), False])
             url = self.conv.resolve(a["href"], image=False)
             if url:
                 self.out.append(f"[url={url}]")
                 close = "[/url]"
         elif tag == "img" and a.get("src"):
+            if self.videos:
+                self.videos[-1][2] = True
             self.out.append(self.conv.img(a["src"]))
         elif tag == "br":
             self.out.append("\n")
@@ -396,6 +402,17 @@ class _HtmlToBBCode(HTMLParser):
             self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
+        if tag == "a" and self.videos:
+            # A thumbnail linked to a video: the whole link becomes the embedded player. A text link stays a link.
+            start, vid, has_image = self.videos.pop()
+            if has_image:
+                del self.out[start:]
+                for idx in range(len(self.stack) - 1, -1, -1):
+                    if self.stack[idx][0] == "a":
+                        del self.stack[idx:]
+                        break
+                self.out.append(f"[youtube]{vid}[/youtube]")
+                return
         for idx in range(len(self.stack) - 1, -1, -1):
             if self.stack[idx][0] == tag:
                 self.out.extend(close for _, close in reversed(self.stack[idx:]))

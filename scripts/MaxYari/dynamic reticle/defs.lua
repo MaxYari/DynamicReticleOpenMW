@@ -2,6 +2,8 @@ local prefix = "DR_"
 
 return {
     GUtoM = 69.99,
+    -- The Reticle Opacity settings for what is readied
+    readiedOpacityKeys = { 'StowedOpacity', 'MeleeOpacity', 'RangedWeaponOpacity', 'RangedSpellOpacity', 'TouchSelfSpellOpacity' },
     settings = {
         visual = "DynamicReticleVisualSettings",
         widget = "DynamicReticleWidgetSettings",

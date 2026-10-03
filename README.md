@@ -4,15 +4,15 @@
 
 <p><font color="#ffffff">If you are looking for hit markers which were previously a part of this mod: </font><b><font color="#00ffff" size="4">Hit markers, hit sounds and slow-mo were completely moved into <a href="https://www.nexusmods.com/morrowind/mods/60362?tab=description">The Combat Juice mod</a> (and were also improved and expanded)</font></b></p>
 
-<!-- nexus-skip-start -->
-Click on the preview below to watch the demo.
-<!-- nexus-skip-end -->
+### Version 1.5
 
-[![Demo](https://img.youtube.com/vi/UHV4UTi0Kd4/0.jpg)](https://www.youtube.com/watch?v=UHV4UTi0Kd4)
+Default settings were changed to provide a better immersive experience by default, you will probably have to adjust your Dynamic Reticle settings, sorry.
 
-<p><font color="#ff00ff">THE DEMO IS OLD!! But the reticle-related things are still valid.</font></p>
+New reticle variants by [rockbiter68](https://www.nexusmods.com/profile/rockbiter68)!
 
-<p><font size="4">Yeah, I know, the name is a mouthful, this mod adds multiple seemingly disconnected things that do actually make sense together. Just trust me, alright?<br>Was developed to be used in tandem with a <a href="https://www.nexusmods.com/morrowind/mods/55327">Dynamic Camera mod</a>, but will work without it.</font></p>
+Also Oblivion-style reticular enemy health bar is still in this mod, its just disabled by default for more immersive experience as I myself currently prefer [Simple Enemy Health Bars](https://www.nexusmods.com/morrowind/mods/56297?tab=files) (Top Version)
+
+<p>Was developed to be used in tandem with a <a href="https://www.nexusmods.com/morrowind/mods/55327">Dynamic Camera mod</a>, but will work without it.</font></p>
 
 <p><a href="https://ko-fi.com/maxyari"><img src="images/morrowind_kofi_banner_left_half_bright124.gif" width="25.72%" align="top" alt="Support me on Ko-fi"></a><a href="https://ko-fi.com/maxyari"><img src="images/banner_right.png" width="73.88%" align="top" alt="Support me on Ko-fi"></a><br><a href="https://ko-fi.com/maxyari"><img src="images/banner_glow.png" width="99.6%" align="top" alt=""></a></p>
 
@@ -31,6 +31,8 @@ Check **Options->Scripts->Dynamic Reticle** - the mod is very configurable. You 
 
 ## ⊹ How To Remove Vanilla Enemy Health Bar
 
+If you are using the oblivion-style reticular health bar bundled with hits mod - you might want to disable original yellow enemy hp bar - this is how:
+
 1. Find `./OpenMW/resources/vfs/mygui/openmw_hud.layout` (inside your OpenMW folder, not your Morrowind folder!), if you are using a mod replacing/modifying vanilla hud, such as the beautiful [Centered HUD for OpenMW](https://www.nexusmods.com/morrowind/mods/53267?tab=posts&BH=1) - look for `/mygui/openmw_hud.layout` inside the mod folder instead (if you are using a mod manager to install it)
 2. Open the file with a text editor
 3. Find an element with a name EnemyHealth (`name="EnemyHealth"`)
@@ -48,5 +50,8 @@ inside position = "..." change 80 to 0. Save the file. Play the game.
 
 ## ⊹ Credits
 
+Thanks to [rockbiter68](https://www.nexusmods.com/profile/rockbiter68) for creating fancy versions of the reticles (available in mod settings)
+
 Some reticle assets are taken from [WoW combat mode plugin](https://github.com/djsmithdev/combatmode) (thanks to **choirbug**) and [Fargoth Morrowind Icon](https://www.nexusmods.com/morrowind/mods/50404).\
-Sounds introduced in 1.2 update are from **Ovani Sound**, picked by **Sikreci**.
+Sounds introduced in 1.2 update are from **Ovani Sound**, picked by **Sikreci**.\
+The sliders, color pickers and selects in the settings are from [Super Settings Renderers](https://www.nexusmods.com/morrowind/mods/59673) by [ownlyme](https://next.nexusmods.com/profile/ownlyme).

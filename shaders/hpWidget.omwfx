@@ -203,7 +203,7 @@ fragment arcShader() {
 
         // Implement animated wave on hit based on waveProgress
         float waveFrequency = 15.0; // Higher frequency for the wave
-        float maxWaveAmplitude = 3.0*uScale; // Maximum amplitude of the wave
+        float maxWaveAmplitude = 3.0; // Maximum amplitude of the wave, before uScale (getArcPixel scales the radius)
         float waveAmplitude = (1.0 - waveProgress) * maxWaveAmplitude; // Amplitude scales down with progress
         float waveInfluence = smoothstep(missingArcFromAngle - 0.5, missingArcFromAngle, angle) * smoothstep( missingArcFromAngle+0.5, missingArcFromAngle, angle);
         float hitWave = waveAmplitude * waveInfluence * sin(waveFrequency * angle + omw.simulationTime * 10.0);
