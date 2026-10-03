@@ -1,0 +1,4 @@
+# Local output of tools/build_nexus_zip.sh
+nexus-upload.zip
+
+__pycache__/

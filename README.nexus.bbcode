@@ -1,0 +1,52 @@
+[img]https://i.imgur.com/CBAElYb.png[/img]
+
+[img]https://i.imgur.com/YYFfIlT.png[/img]
+
+[color=#ffffff]If you are looking for hit markers which were previously a part of this mod: [/color][b][color=#00ffff][size=4]Hit markers, hit sounds and slow-mo were completely moved into [url=https://www.nexusmods.com/morrowind/mods/60362?tab=description]The Combat Juice mod[/url] (and were also improved and expanded)[/size][/color][/b]
+
+[youtube]UHV4UTi0Kd4[/youtube]
+
+[color=#ff00ff]THE DEMO IS OLD!! But the reticle-related things are still valid.[/color]
+
+[size=4]Yeah, I know, the name is a mouthful, this mod adds multiple seemingly disconnected things that do actually make sense together. Just trust me, alright?
+Was developed to be used in tandem with a [url=https://www.nexusmods.com/morrowind/mods/55327]Dynamic Camera mod[/url], but will work without it.[/size]
+
+[url=https://ko-fi.com/maxyari][img]https://raw.githubusercontent.com/MaxYari/DynamicReticleOpenMW/main/images/morrowind_kofi_banner_left_half_bright124.gif[/img][/url][url=https://ko-fi.com/maxyari][img]https://raw.githubusercontent.com/MaxYari/DynamicReticleOpenMW/main/images/nexus/banner_right.png[/img][/url]
+[url=https://ko-fi.com/maxyari][img]https://raw.githubusercontent.com/MaxYari/DynamicReticleOpenMW/main/images/nexus/banner_glow.png[/img][/url]
+
+[size=5][b]⊹ Installation[/b][/size]
+
+[list]
+[*]Requires OpenMW 0.49 or newer.
+[*]Install and enable [url=https://www.nexusmods.com/morrowind/mods/60256]Max Yari's Script Services (MSS)[/url], it's a required dependency.
+[*]Install this mod with a mod organiser: download the archive (or this repository as an archive) and drag and drop it into your mod organiser of choice (e.g [url=https://github.com/ModOrganizer2/modorganizer/releases]Mod Organizer 2[/url] on Windows or [url=https://github.com/grazelandsnomad/nerevarine_organizer/releases/tag/v0.70]Nerevarine Organizer[/url] on Linux). Or [url=https://modding-openmw.com/tips/installing-mods/]read this tutorial[/url] on how to install mods using the launcher or completely manually (it's also very easy).
+[*]Enable the mod's .omwscripts file in the "Content Files" tab of the OpenMW launcher.
+[*]Disable vanilla crosshair in [b]Options->Prefs->Crosshair (at the bottom).[/b]
+[*]Ensure that shaders are enabled in game settings (enemy HP widget is a shader).
+[/list]
+
+[size=5][b]⊹ Configuration[/b][/size]
+
+Check [b]Options->Scripts->Dynamic Reticle[/b] - the mod is very configurable. You can even drop new reticle images into a supported folder (it's specified also there in options) and be able to select between them in script options.
+
+[size=5][b]⊹ How To Remove Vanilla Enemy Health Bar[/b][/size]
+
+[list=1]
+[*]Find [font=Courier New]./OpenMW/resources/vfs/mygui/openmw_hud.layout[/font] (inside your OpenMW folder, not your Morrowind folder!), if you are using a mod replacing/modifying vanilla hud, such as the beautiful [url=https://www.nexusmods.com/morrowind/mods/53267?tab=posts&BH=1]Centered HUD for OpenMW[/url] - look for [font=Courier New]/mygui/openmw_hud.layout[/font] inside the mod folder instead (if you are using a mod manager to install it)
+[*]Open the file with a text editor
+[*]Find an element with a name EnemyHealth ([font=Courier New]name="EnemyHealth"[/font])
+[*]In the "position" property of that element - 3rd number is this element's length - set it to 0 to hide the element
+[/list]
+
+e.g you might find an element that looks like this
+
+[code]<Widget type="ProgressBar" skin="MW_EnergyBar_Yellow" position="0 131 80 12" align="Center Bottom" name="EnemyHealth">
+    <Property key="Visible" value="false"/>
+</Widget>[/code]
+
+inside position = "..." change 80 to 0. Save the file. Play the game.
+
+[size=5][b]⊹ Credits[/b][/size]
+
+Some reticle assets are taken from [url=https://github.com/djsmithdev/combatmode]WoW combat mode plugin[/url] (thanks to [b]choirbug[/b]) and [url=https://www.nexusmods.com/morrowind/mods/50404]Fargoth Morrowind Icon[/url].
+Sounds introduced in 1.2 update are from [b]Ovani Sound[/b], picked by [b]Sikreci[/b].

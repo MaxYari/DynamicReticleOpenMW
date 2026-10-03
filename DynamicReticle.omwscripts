@@ -1,0 +1,4 @@
+NPC, CREATURE: scripts\MaxYari\dynamic reticle\hitmarkerActor.lua
+PLAYER: scripts\MaxYari\dynamic reticle\hitmarkerPlayer.lua
+GLOBAL: scripts\MaxYari\dynamic reticle\global.lua
+MENU: scripts\MaxYari\dynamic reticle\menu.lua

@@ -1,0 +1,293 @@
+uniform_vec2 uPosition {
+    default = vec2(0.5, 0.5);
+    min = vec2(0.0, 0.0);
+    max = vec2(1.0, 1.0);
+    display_name = "Widget Position";
+    static = false;
+}
+
+uniform_float uScale {
+    default = 1.0;
+    static = false;
+}
+
+uniform_vec3 uColor {
+    default = vec3(0.792, 0.651, 0.463);
+    display_name = "Arc Color";
+    static = false;
+}
+
+uniform_vec3 uDamageColor {
+    default = vec3(0.25, 0, 0);
+    display_name = "Damage Color";
+    static = false;
+}
+
+uniform_float uOpacity {
+    default = 0;
+    step = 0.01;
+    min = 0;
+    max = 1.0;
+    display_name = "Opacity";
+    static = false;
+}
+
+uniform_float uArcRadius {
+    default = 60;
+    step = 0.01;
+    min = 0.1;
+    max = 1.0;
+    display_name = "Arc Radius";
+    static = false;
+}
+
+uniform_float uMaxArcAngle {
+    default = 3.14;
+    step = 1.0;
+    min = 10.0;
+    max = 6.28;
+    display_name = "Max Arc Angle";
+    static = false;
+}
+
+uniform_float uCurArcAngle {
+    default = 1.6;
+    step = 1.0;
+    min = 10.0;
+    max = 6.28;
+    display_name = "Current Arc Angle";
+    static = false;
+}
+
+uniform_vec3 uAnimatedSectors {
+    size = 3;
+}
+
+uniform_float uLostHpTailAngle {
+    default = 0.0;
+    display_name = "Lost Hp Tail Length";
+    static = false;
+}
+
+uniform_float uOnHitWaveProgress {
+    default = 1.0;
+    static = false;
+}
+
+uniform_vec3 uStaminaColor {
+    default = vec3(1.0, 1.0, 1.0);
+    static = false;
+}
+
+uniform_vec3 uStaminaDamageColor {
+    default = vec3(0.16, 0.37, 0.2);
+    static = false;
+}
+
+uniform_float uStaminaOpacity {
+    default = 0;
+    static = false;
+}
+
+uniform_float uStaminaRadius {
+    default = 54;
+    static = false;
+}
+
+uniform_float uStaminaThickness {
+    default = 1.5;
+    static = false;
+}
+
+uniform_float uStaminaMaxArcAngle {
+    default = 3.14;
+    static = false;
+}
+
+uniform_float uStaminaCurArcAngle {
+    default = 3.14;
+    static = false;
+}
+
+uniform_vec3 uStaminaAnimatedSectors {
+    size = 3;
+}
+
+uniform_float uStaminaLostTailAngle {
+    default = 0.0;
+    static = false;
+}
+
+uniform_float uStaminaOnHitWaveProgress {
+    default = 1.0;
+    static = false;
+}
+
+
+
+fragment arcShader() {
+    // Utility functions /////////////////////////////////////////////////////
+    //HSV (hue, saturation, value) to RGB.
+    //Sources: https://gist.github.com/yiwenl/745bfea7f04c456e0101, https://gist.github.com/sugi-cho/6a01cae436acddd72bdf
+    vec3 hsv2rgb(vec3 c){
+        vec4 K=vec4(1.,2./3.,1./3.,3.);
+        return c.z*mix(K.xxx,clamp(abs(fract(c.x+K.xyz)*6.-K.w)-K.x,0.,1.),c.y);
+    }
+
+    //RGB to HSV.
+    //Source: https://gist.github.com/yiwenl/745bfea7f04c456e0101
+    vec3 rgb2hsv(vec3 c) {
+        float cMax=max(max(c.r,c.g),c.b),
+            cMin=min(min(c.r,c.g),c.b),
+            delta=cMax-cMin;
+        vec3 hsv=vec3(0.,0.,cMax);
+        if(cMax>cMin){
+            hsv.y=delta/cMax;
+            if(c.r==cMax){
+                hsv.x=(c.g-c.b)/delta;
+            }else if(c.g==cMax){
+                hsv.x=2.+(c.b-c.r)/delta;
+            }else{
+                hsv.x=4.+(c.r-c.g)/delta;
+            }
+            hsv.x=fract(hsv.x/6.);
+        }
+        return hsv;
+    }
+
+    vec3 alphaBlendColors(vec3 col, float a, vec3 bgCol) {
+        return a*col + (1.0-a)*bgCol;
+    }
+
+    float remap(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    ///////////////////////////////////////////////////////////////////
+
+    omw_In vec2 omw_TexCoord;
+
+    const float Pi = 3.141592;
+
+    const float filledArcAlpha = 0.9;
+    const float missingArcAlpha = 0.2;
+    const float lostTailAlpha = 0.75;
+
+    float getArcPixel(float distance, float radius, float thickness, float fadeBottom, float fadeTop) {
+        radius *= uScale;
+        thickness *= uScale;
+        fadeBottom *= uScale;
+        fadeTop *= uScale;
+
+        float arcWidthStart = radius - thickness / 2.0;
+        float arcWidthEnd = radius + thickness / 2.0;
+
+        // Calculate arc alpha using smoothstep for anti-aliasing
+        float arcAlpha = smoothstep(arcWidthStart - fadeBottom, arcWidthStart, distance) *
+                        smoothstep(arcWidthEnd + fadeTop, arcWidthEnd, distance);
+
+        return arcAlpha;
+    }
+
+    // One arc of the widget blended over cumulColor, each of its layers faded by opacity. Arc angles run
+    // from 0 at the arc's start to maxArc at its end, the arc centred under the reticle.
+    vec3 drawArc(vec3 cumulColor, float distance, float angle, float radius, float thickness,
+                 float maxArc, float curArc, float tailArc, float waveProgress, vec3 sectors[3],
+                 vec3 arcColor, vec3 damageColor, float opacity) {
+        float halfArc = maxArc / 2.0;
+        float fullArcFromAngle = -halfArc;
+        float fullArcToAngle = halfArc;
+        float missingArcFromAngle = curArc - halfArc;
+        float lostTailAngle = tailArc - halfArc;
+
+        float animatedRadius = radius + 1.0 * sin((omw.simulationTime / 5.0 + angle) * 10.0);
+
+        // Implement animated wave on hit based on waveProgress
+        float waveFrequency = 15.0; // Higher frequency for the wave
+        float maxWaveAmplitude = 3.0*uScale; // Maximum amplitude of the wave
+        float waveAmplitude = (1.0 - waveProgress) * maxWaveAmplitude; // Amplitude scales down with progress
+        float waveInfluence = smoothstep(missingArcFromAngle - 0.5, missingArcFromAngle, angle) * smoothstep( missingArcFromAngle+0.5, missingArcFromAngle, angle);
+        float hitWave = waveAmplitude * waveInfluence * sin(waveFrequency * angle + omw.simulationTime * 10.0);
+        animatedRadius += hitWave;
+
+        // Fade out arc ends
+        float endsFadeAngle = maxArc * 0.1666; // Angle in radians to fade out the ends
+        float fadedEndsAlpha = smoothstep(fullArcFromAngle, fullArcFromAngle + endsFadeAngle, angle) *
+                          smoothstep(fullArcToAngle, fullArcToAngle - endsFadeAngle, angle);
+
+        // Draw filled and missing arcs
+        if (angle > fullArcFromAngle && angle <= missingArcFromAngle) {
+            float arcAlpha = getArcPixel(distance, animatedRadius, thickness, 2.0, 2.0) * filledArcAlpha * fadedEndsAlpha;
+            cumulColor = alphaBlendColors(arcColor, arcAlpha * opacity, cumulColor);
+        } else if (angle > missingArcFromAngle && angle <= fullArcToAngle) {
+            float tailInfluence = 0.0;
+            if (lostTailAngle > missingArcFromAngle) {
+                tailInfluence = smoothstep(lostTailAngle, missingArcFromAngle, angle);
+            }
+            vec3 mixedCol = mix(arcColor, damageColor, tailInfluence);
+            float mixedAlpha = mix(missingArcAlpha, lostTailAlpha, tailInfluence);
+            float arcAlpha = getArcPixel(distance, animatedRadius - 1.0, thickness, 2.0, 2.0) * mixedAlpha * fadedEndsAlpha;
+            cumulColor = alphaBlendColors(mixedCol, arcAlpha * opacity, cumulColor);
+        }
+
+        // Animate disappearing sectors
+        for (int i = 0; i < 3; i++) {
+            vec3 sector = sectors[i];
+            float startAngle = sector.x - halfArc;
+            float endAngle = sector.y - halfArc;
+            float progress = sector.z;
+
+            if (angle > startAngle && angle <= endAngle) {
+                float lateProgress = remap(clamp(progress - 0.5, 0.0, 1.0), 0.0, 0.5, 0.0, 1.0);
+                float animatedAlpha = 1.0 - lateProgress; // Fade out over time
+                float animatedOuterBorder = 2.0 + 10.0*progress;
+                float animatedInnerBorder = 2.0 + 20.0*progress;
+                float arcAlpha = getArcPixel(distance, animatedRadius, thickness, animatedInnerBorder, animatedOuterBorder) * animatedAlpha;
+                cumulColor = alphaBlendColors(damageColor, arcAlpha * opacity, cumulColor);
+                break;
+            }
+        }
+
+        return cumulColor;
+    }
+
+    void main() {
+
+        vec4 prevFragment = omw_Texture2D(omw_SamplerLastShader, omw_TexCoord);
+        if (uOpacity <= 0.0 && uStaminaOpacity <= 0.0) {
+            omw_FragColor = prevFragment;
+            return;
+        }
+
+        // Calculate the angle of the current fragment relative to the center
+        vec2 position = vec2(uPosition.x,1.0-uPosition.y);
+        vec2 toPixel = (omw_TexCoord - position) * omw.resolution; // Scale to pixel space
+        float distance = length(toPixel);
+        if (distance > uArcRadius * 2.0 * uScale) {
+            omw_FragColor = prevFragment;
+            return;
+        }
+        float angle = atan(toPixel.x, -toPixel.y); // Adjusted to draw above the center
+
+        vec3 cumulColor = prevFragment.rgb;
+        if (uStaminaOpacity > 0.0) {
+            cumulColor = drawArc(cumulColor, distance, angle, uStaminaRadius, uStaminaThickness,
+                uStaminaMaxArcAngle, uStaminaCurArcAngle, uStaminaLostTailAngle, uStaminaOnHitWaveProgress,
+                uStaminaAnimatedSectors, uStaminaColor, uStaminaDamageColor, uStaminaOpacity);
+        }
+        if (uOpacity > 0.0) {
+            cumulColor = drawArc(cumulColor, distance, angle, uArcRadius, 2.0,
+                uMaxArcAngle, uCurArcAngle, uLostHpTailAngle, uOnHitWaveProgress,
+                uAnimatedSectors, uColor, uDamageColor, uOpacity);
+        }
+
+        omw_FragColor = vec4(cumulColor, prevFragment.a);
+    }
+}
+
+technique {
+    passes = arcShader;
+    description = "Arc Shader";
+    version = "1.2";
+    author = "Max Yari, GitHub Copilot GPT-4o";
+    dynamic = true;
+}
